@@ -298,6 +298,9 @@ class ReedSolomon_GF256:
 
 
 if __name__ == '__main__':
+    escode = ReedSolomon_GF256()
+    escode.tables_init()
+
     times = 1000
 
     entv_total = 0
@@ -309,9 +312,6 @@ if __name__ == '__main__':
 
     for i in range(times):
         print("---------------------------------", "Test (", i+1, "/", times, ") ---------------------------------")
-
-        escode = ReedSolomon_GF256()
-        escode.tables_init()
 
         # randomly choose k and m
         k = np.random.randint(3, 11)
