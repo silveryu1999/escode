@@ -37,6 +37,10 @@ class ReedSolomon_GF256:
                 if multiply[i][j] == 1:
                     self.inverse[i] = j
 
+        print("power table:", self.power)
+        print("log table:", self.log)
+        print("inverse table:", self.inverse)
+
         return
     
     # xor for add in GF(2^8)
