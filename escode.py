@@ -303,7 +303,7 @@ if __name__ == '__main__':
     escode = ReedSolomon_GF256()
     escode.tables_init()
 
-    times = 1000
+    times = 10000
 
     entv_total = 0
     detv_total = 0
