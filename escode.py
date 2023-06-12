@@ -251,6 +251,7 @@ class ReedSolomon_GF256:
 
             if flag == False:
                 print("decode matrix (vandermonde version) is not invertible!")
+                reconstruct_data = np.array([])
             else:
                 print("decode matrix (vandermonde version):\n", dm)
                 reconstruct_data = self.matrix_multiply(dm, incomplete_data)
@@ -286,6 +287,7 @@ class ReedSolomon_GF256:
 
             if flag == False:
                 print("decode matrix (cauchy version) is not invertible!")
+                reconstruct_data = np.array([])
             else:
                 print("decode matrix (cauchy version):\n", dm)
                 reconstruct_data = self.matrix_multiply(dm, incomplete_data)
@@ -294,7 +296,7 @@ class ReedSolomon_GF256:
                 detc = time.time() - decode_cauchy_start
                 print("cauchy decode time:", detc * 1000, "ms")
 
-        return flag, dm, entv, detv, entc, detc
+        return flag, reconstruct_data, entv, detv, entc, detc
 
 
 if __name__ == '__main__':
@@ -309,6 +311,11 @@ if __name__ == '__main__':
     detc_total = 0
     dev_count = 0
     dec_count = 0
+    both_correct_count = 0
+    either_correct_count = 0
+    both_wrong_count = 0
+    v_correct_count = 0
+    c_correct_count = 0
 
     for i in range(times):
         print("---------------------------------", "Test (", i+1, "/", times, ") ---------------------------------")
@@ -331,13 +338,34 @@ if __name__ == '__main__':
         # cauchy
         flag_c, re_data_c, _, _, entc, detc = escode.reedsolomon(k, m, raw_data, drops, "cauchy")
 
+        either = 0
+
         if flag_v == True:
             dev_count += 1
             detv_total += detv
+            if (re_data_v == raw_data).all() == True:
+                print("vandermonde reconstruct correct")
+                v_correct_count += 1
+                either += 1
+        else:
+            print("vandermonde reconstruct failed")
 
         if flag_c == True:
             dec_count += 1
             detc_total += detc
+            if (re_data_c == raw_data).all() == True:
+                print("cauchy reconstruct correct")
+                c_correct_count += 1
+                either += 1
+        else:
+            print("cauchy reconstruct failed")
+
+        if either == 1:
+            either_correct_count += 1
+        elif either == 2:
+            both_correct_count += 1
+        elif either == 0:
+            both_wrong_count += 1
 
         entv_total += entv
         entc_total += entc
@@ -345,4 +373,5 @@ if __name__ == '__main__':
     print("encode avg time (vandermonde):", 1000 * entv_total / times, "ms")
     print("encode avg time (cauchy):", 1000 * entc_total / times, "ms")
     print("decode avg time (vandermonde):", 1000 * detv_total / dev_count, "ms")
-    print("decode avg time (cauchy):", 1000 * detc_total / times, "ms")
+    print("decode avg time (cauchy):", 1000 * detc_total / dec_count, "ms")
+    print("total:", times, "either correct:", either_correct_count + both_correct_count, "both correct:", both_correct_count, "vandermonde succeeded:", v_correct_count, "cauchy succeeded:", c_correct_count, "both failed:", both_wrong_count)
