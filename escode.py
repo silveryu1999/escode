@@ -1,6 +1,7 @@
 # this escode works in GF(2^8), i.e. work in bytes
 import numpy as np
 import random
+import time
 
 class ReedSolomon_GF256:
 
@@ -221,10 +222,14 @@ class ReedSolomon_GF256:
             print("dropping the duplicated sets of data")
             return False, []
         
+        entv, detv, entc, detc = 0, 0, 0, 0
+        
         if matrix_type == "vandermonde":
             # using vandermonde version
 
             # generate encode matrix using vandermonde matrix
+            encode_vandermonde_start = time.time()
+
             em = self.gen_encode_matrix_vandermonde(k, m)
             print("encode matrix (vandermonde version):\n", em)
 
@@ -232,11 +237,16 @@ class ReedSolomon_GF256:
             encode_data = self.matrix_multiply(em, raw_data)
             print("encoded data (vandermonde version):", encode_data)
 
+            entv = time.time() - encode_vandermonde_start
+            print("vandermonde encode time:", entv * 1000, "ms")
+
             # drop specified sets of the encoded data
             incomplete_data = self.encode_data_drop(encode_data, m, drops)
             print("data after lost (vandermonde version):", incomplete_data)
 
             # generate decode matrix and reconstruct raw data (vandermonde)
+            decode_vandermonde_start = time.time()
+
             flag, dm = self.gen_decode_matrix(em, drops)
 
             if flag == False:
@@ -246,10 +256,15 @@ class ReedSolomon_GF256:
                 reconstruct_data = self.matrix_multiply(dm, incomplete_data)
                 print("reconstructed data (vandermonde version):", reconstruct_data)
 
+                detv = time.time() - decode_vandermonde_start
+                print("vandermonde decode time:", detv * 1000, "ms")
+
         else:
             # using cauchy version
 
             # generate encode matrix using cauchy matrix
+            encode_cauchy_start = time.time()
+
             em = self.gen_encode_matrix_cauchy(k, m)
             print("encode matrix (cauchy version):\n", em)
 
@@ -257,11 +272,16 @@ class ReedSolomon_GF256:
             encode_data = self.matrix_multiply(em, raw_data)
             print("encoded data (cauchy version):", encode_data)
 
+            entc = time.time() - encode_cauchy_start
+            print("cauchy encode time:", entc * 1000, "ms")
+
             # drop specified sets of the encoded data
             incomplete_data = self.encode_data_drop(encode_data, m, drops)
             print("data after lost (cauchy version):", incomplete_data)
 
             # generate decode matrix and reconstruct raw data (cauchy)
+            decode_cauchy_start = time.time()
+
             flag, dm = self.gen_decode_matrix(em, drops)
 
             if flag == False:
@@ -271,27 +291,58 @@ class ReedSolomon_GF256:
                 reconstruct_data = self.matrix_multiply(dm, incomplete_data)
                 print("reconstructed data (cauchy version):", reconstruct_data)
 
-        return flag, dm
+                detc = time.time() - decode_cauchy_start
+                print("cauchy decode time:", detc * 1000, "ms")
+
+        return flag, dm, entv, detv, entc, detc
 
 
 if __name__ == '__main__':
-    escode = ReedSolomon_GF256()
-    escode.tables_init()
+    times = 1000
 
-    # randomly choose k and m
-    k = np.random.randint(3, 11)
-    m = np.random.randint(1, k+1)
-    print("k:", k, "m:", m)
+    entv_total = 0
+    detv_total = 0
+    entc_total = 0
+    detc_total = 0
+    dev_count = 0
+    dec_count = 0
 
-    # randomly generate raw data
-    raw_data = np.array(np.random.randint(0, 256, k)).transpose()
-    print("raw_data:", raw_data)
+    for i in range(times):
+        print("---------------------------------", "Test (", i+1, "/", times, ") ---------------------------------")
 
-    # randomly drop m sets of encoded data
-    drops = np.array(random.sample(range(0, k+m), m))
-    print("drops:", drops)
+        escode = ReedSolomon_GF256()
+        escode.tables_init()
 
-    # vandermonde
-    flag_v, re_data_v = escode.reedsolomon(k, m, raw_data, drops, "vandermonde")
-    # cauchy
-    flag_c, re_data_c = escode.reedsolomon(k, m, raw_data, drops, "cauchy")
+        # randomly choose k and m
+        k = np.random.randint(3, 11)
+        m = np.random.randint(1, k+1)
+        print("k:", k, "m:", m)
+
+        # randomly generate raw data
+        raw_data = np.array(np.random.randint(0, 256, k)).transpose()
+        print("raw_data:", raw_data)
+
+        # randomly drop m sets of encoded data
+        drops = np.array(random.sample(range(0, k+m), m))
+        print("drops:", drops)
+
+        # vandermonde
+        flag_v, re_data_v, entv, detv, _, _ = escode.reedsolomon(k, m, raw_data, drops, "vandermonde")
+        # cauchy
+        flag_c, re_data_c, _, _, entc, detc = escode.reedsolomon(k, m, raw_data, drops, "cauchy")
+
+        if flag_v == True:
+            dev_count += 1
+            detv_total += detv
+
+        if flag_c == True:
+            dec_count += 1
+            detc_total += detc
+
+        entv_total += entv
+        entc_total += entc
+
+    print("encode avg time (vandermonde):", 1000 * entv_total / times, "ms")
+    print("encode avg time (cauchy):", 1000 * entc_total / times, "ms")
+    print("decode avg time (vandermonde):", 1000 * detv_total / dev_count, "ms")
+    print("decode avg time (cauchy):", 1000 * detc_total / times, "ms")
