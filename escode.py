@@ -174,8 +174,8 @@ class ReedSolomon_GF256:
                 v = A[j][i]
                 if v != 0:
                     for k in range(n):
-                        A[j][k] = self.GF_add(A[j][k], self.GF_multiply(v, A[i][k]))
-                        inv[j][k] = self.GF_add(inv[j][k], self.GF_multiply(v, inv[i][k]))
+                        A[j][k] = self.GF_minus(A[j][k], self.GF_multiply(v, A[i][k]))
+                        inv[j][k] = self.GF_minus(inv[j][k], self.GF_multiply(v, inv[i][k]))
 
         return True, inv
     
@@ -307,7 +307,7 @@ if __name__ == '__main__':
     escode = ReedSolomon_GF256()
     escode.tables_init()
 
-    times = 10000
+    times = 10
 
     entv_total = 0
     detv_total = 0
@@ -325,8 +325,9 @@ if __name__ == '__main__':
         print("---------------------------------", "Test (", i+1, "/", times, ") ---------------------------------")
 
         # randomly choose k and m
-        k = np.random.randint(3, 11)
-        m = np.random.randint(1, k+1)
+        # k = np.random.randint(3, 11)
+        # m = np.random.randint(1, k+1)
+        k, m = 5, 3
         print("k:", k, "m:", m)
 
         # randomly generate raw data
